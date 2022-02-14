@@ -18,10 +18,15 @@ export PLATFORM_SDK_ROOT=/srv/sailfishos
 curl -k -O https://releases.sailfishos.org/sdk/installers/latest/Jolla-latest-SailfishOS_Platform_SDK_Chroot-i486.tar.bz2
 sudo mkdir -p $PLATFORM_SDK_ROOT/sdks/sfossdk
 sudo tar --numeric-owner -p -xjf Jolla-latest-SailfishOS_Platform_SDK_Chroot-i486.tar.bz2 -C $PLATFORM_SDK_ROOT/sdks/sfossdk
-echo "export PLATFORM_SDK_ROOT=$PLATFORM_SDK_ROOT" >> ~/.bashrc
-echo 'alias sfossdk=$PLATFORM_SDK_ROOT/sdks/sfossdk/sdk-chroot' >> ~/.bashrc; exec bash
-echo 'PS1="PlatformSDK $PS1"' > ~/.mersdk.profile
-echo '[ -d /etc/bash_completion.d ] && for i in /etc/bash_completion.d/*;do . $i;done' >> ~/.mersdk.profile
+cat << EOF >> ~/.bashrc
+if [[ \$SAILFISH_SDK ]]; then
+  PS1="PlatformSDK \$PS1"
+else
+  export PLATFORM_SDK_ROOT="$PLATFORM_SDK_ROOT"
+  alias sfossdk=\$PLATFORM_SDK_ROOT/sdks/sfossdk/sdk-chroot
+fi
+EOF
+exec bash
 sfossdk
 ```
 
@@ -103,22 +108,31 @@ As mentioned, the Sailfish Platform SDK is location independent so it uses the l
 
 ## Entering Sailfish Platform SDK
 
-Before entering the Sailfish Platform SDK you may want to make an Sailfish Platform SDK equivalent of ".profile" to give you a nice prompt to remind you that you are in the Sailfish Platform SDK. This also reads the bash autocompletion scripts from inside the chroot.
+Before entering the Sailfish Platform SDK you may want to update your ".bashrc" file to give you a nice prompt to remind you that you are in the Sailfish Platform SDK. At the same time you can also set up a shell alias for entering the SDK conveniently.
 ```nosh
-cat << EOF >> ~/.mersdk.profile
-PS1="PlatformSDK \$PS1"
-if [ -d /etc/bash_completion.d ]; then
-   for i in /etc/bash_completion.d/*;
-   do
-      . \$i
-   done
+cat << EOF >> ~/.bashrc
+if [[ \$SAILFISH_SDK ]]; then
+  PS1="PlatformSDK \$PS1"
+else
+  export PLATFORM_SDK_ROOT="$PLATFORM_SDK_ROOT"
+  alias sfossdk=\$PLATFORM_SDK_ROOT/sdks/sfossdk/sdk-chroot
 fi
 EOF
+```
+
+Reload the updated configuration.
+```nosh
+exec bash
 ```
 
 If you use multiple Sailfish Platform SDK instances, you can utilise the `SAILFISH_SDK` shell variable to determine the absolute path to the Sailfish Platform SDK chroot in use (since Sailfish OS release 4.3.0.15).
 
 To enter the Sailfish Platform SDK rootfs with the helper script run
+```nosh
+sfossdk
+```
+
+or invoke the helper script of a particular Sailfish Platform SDK instance directly.
 ```nosh
 /srv/sailfishos/sdks/sfossdk/sdk-chroot
 ```
@@ -126,13 +140,6 @@ To enter the Sailfish Platform SDK rootfs with the helper script run
 You should find that you are operating under your normal username and that your home directory is available as `/home/<username>` and any other mountpoints are mounted under `/parentroot/*`
 
 You have sudo rights automatically. If sudo fails within the sdk, make sure that the filesystem the sdk is on is not mounted with the "nosuid" parameter. "mount" on the host system gives you this information, add "suid" as parameter in fstab, if necessary.
-
-## Useful Alias
-
-If you tend to use a single instance of the Sailfish Platform SDK then this alias is useful
-```nosh
-echo alias sfossdk=/srv/sailfishos/sdks/sfossdk/sdk-chroot >> ~/.bashrc ; exec bash
-```
 
 # Next Steps
 
